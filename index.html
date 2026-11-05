@@ -353,8 +353,6 @@ body.editing .slide.active { outline: 3px dashed var(--blue-bright); outline-off
 </div>
 
 <div class="deck-counter" id="deckCounter">1 / 9</div>
-<div class="edit-hotzone" id="editHotzone"></div>
-<button class="edit-toggle" id="editToggle" title="Режим правки (E)">&#9998;</button>
 
 <script>
 /* ===========================================
@@ -412,6 +410,7 @@ class SlidePresentation {
         this.slides.forEach((s, k) => {
             s.classList.toggle('active', k === this.currentSlide);
             s.classList.toggle('visible', k === this.currentSlide);
+            const off = k !== this.currentSlide; s.toggleAttribute('inert', off); s.setAttribute('aria-hidden', off ? 'true' : 'false');
         });
         this.counter.textContent = `${this.currentSlide + 1} / ${this.slides.length}`;
         localStorage.setItem('nk-web-i', this.currentSlide);
@@ -419,46 +418,6 @@ class SlidePresentation {
 }
 const deck = new SlidePresentation();
 
-/* ===========================================
-   РЕЖИМ ПРАВКИ ТЕКСТА: E или уголок слева сверху
-   Правки сохраняются в память браузера (localStorage)
-   =========================================== */
-const editor = {
-    isActive: false,
-    toggleEditMode() {
-        this.isActive = !this.isActive;
-        document.body.classList.toggle('editing', this.isActive);
-        document.getElementById('editToggle').classList.toggle('active', this.isActive);
-        document.querySelectorAll('.slide h1, .slide h2, .slide h4, .slide p, .slide span, .slide div.n, .slide div.c')
-            .forEach(el => {
-                if (el.children.length === 0) el.setAttribute('contenteditable', this.isActive ? 'true' : 'false');
-            });
-        if (!this.isActive) this.save();
-    },
-    save() {
-        localStorage.setItem('nk-web-content', document.getElementById('deckStage').innerHTML);
-    },
-    restore() {
-        const saved = localStorage.getItem('nk-web-content');
-        if (saved) {
-            // восстановление отключено намеренно: источник правды - файл;
-            // чтобы включить, раскомментируйте следующую строку
-            // document.getElementById('deckStage').innerHTML = saved;
-        }
-    }
-};
-const hotzone = document.getElementById('editHotzone');
-const editToggle = document.getElementById('editToggle');
-let hideTimeout = null;
-hotzone.addEventListener('mouseenter', () => { clearTimeout(hideTimeout); editToggle.classList.add('show'); });
-hotzone.addEventListener('mouseleave', () => { hideTimeout = setTimeout(() => { if (!editor.isActive) editToggle.classList.remove('show'); }, 400); });
-editToggle.addEventListener('mouseenter', () => clearTimeout(hideTimeout));
-editToggle.addEventListener('mouseleave', () => { hideTimeout = setTimeout(() => { if (!editor.isActive) editToggle.classList.remove('show'); }, 400); });
-editToggle.addEventListener('click', () => editor.toggleEditMode());
-document.addEventListener('keydown', (e) => {
-    if ((e.key === 'e' || e.key === 'E') && !(e.target.getAttribute && e.target.getAttribute('contenteditable') === 'true')) editor.toggleEditMode();
-    if ((e.metaKey || e.ctrlKey) && e.key === 's') { e.preventDefault(); editor.save(); }
-});
 </script>
 </body>
 </html>
