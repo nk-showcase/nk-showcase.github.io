@@ -33,25 +33,26 @@
 * { margin: 0; padding: 0; box-sizing: border-box; }
 
 /* ===========================================
-   ОБЯЗАТЕЛЬНАЯ БАЗА ФИКСИРОВАННОЙ СЦЕНЫ 16:9
+   СЛАЙДЫ 16:9 СТОПКОЙ: ОБЫЧНАЯ ПРОКРУТКА
    =========================================== */
-html, body { width: 100%; height: 100%; margin: 0; overflow: hidden; background: var(--stage-bg, #000); }
-.deck-viewport { position: fixed; inset: 0; overflow: hidden; background: var(--stage-bg, #000); }
-.deck-stage { position: absolute; left: 0; top: 0; width: 1920px; height: 1080px; overflow: hidden; transform-origin: 0 0; background: var(--slide-bg, #fff); }
-.slide { position: absolute; inset: 0; width: 1920px; height: 1080px; overflow: hidden; display: block; visibility: hidden; opacity: 0; pointer-events: none; background: var(--slide-bg, #fff); }
-.slide.active, .slide.visible { visibility: visible; opacity: 1; pointer-events: auto; z-index: 1; }
+html, body { width: 100%; height: auto; min-height: 100%; margin: 0; overflow-x: hidden; overflow-y: auto; background: var(--stage-bg, #000); }
+.deck-viewport { container-type: inline-size; position: static; width: 100%; overflow: visible; background: var(--stage-bg, #000); padding: 32px 0 72px; }
+.deck-stage { --s: min(1, 100cqi / 1920px); position: relative; width: calc(1920px * var(--s)); height: auto; margin: 0 auto; overflow: visible; background: transparent; }
+.slide { position: relative; width: 1920px; height: 1080px; overflow: hidden; display: block; visibility: visible; opacity: 1; pointer-events: auto; background: var(--slide-bg, #fff); transform: scale(var(--s)); transform-origin: top left; margin-bottom: calc((var(--s) - 1) * 1080px + 32px); }
+.slide:last-child { margin-bottom: calc((var(--s) - 1) * 1080px); }
+.slide.active, .slide.visible { z-index: 1; }
 img, video, canvas, svg { max-width: 100%; max-height: 100%; }
 .deck-controls { position: fixed; left: 50%; bottom: 22px; transform: translateX(-50%); z-index: 1000; }
 @page { size: 1920px 1080px; margin: 0; }
 @media print {
     html, body { width: 1920px; height: auto; overflow: visible; background: #fff; }
-    .deck-viewport { position: static; overflow: visible; background: #fff; }
-    .deck-stage { position: static; width: auto; height: auto; transform: none !important; background: none; }
-    .slide { position: relative; display: block !important; visibility: visible !important; opacity: 1 !important; pointer-events: auto !important; width: 1920px; height: 1080px; break-after: page; page-break-after: always; }
+    .deck-viewport { position: static; overflow: visible; background: #fff; padding: 0; }
+    .deck-stage { position: static; width: 1920px; height: auto; transform: none !important; background: none; --s: 1; }
+    .slide { position: relative; display: block !important; visibility: visible !important; opacity: 1 !important; pointer-events: auto !important; width: 1920px; height: 1080px; break-after: page; page-break-after: always; transform: none !important; margin: 0 !important; }
     .slide:last-child { break-after: auto; page-break-after: auto; }
     .reveal, .pop, .slide .reveal, .slide .pop { opacity: 1 !important; transform: none !important; animation: none !important; transition: none !important; }
     .gh-card, .card, .acard, .mini { box-shadow: none !important; }
-    .deck-controls, .edit-hotzone, .edit-toggle, .deck-counter { display: none !important; }
+    .deck-controls, .edit-hotzone, .edit-toggle, .deck-counter, .to-top { display: none !important; }
 }
 @media (prefers-reduced-motion: reduce) {
     *, *::before, *::after { animation-duration: 0.01ms !important; transition-duration: 0.2s !important; }
@@ -109,6 +110,7 @@ h2.title { font-size: 54px; font-weight: 800; letter-spacing: -0.01em; line-heig
 .pop { opacity: 0; transform: scale(.92); transition: opacity .5s var(--ease-out-expo), transform .5s var(--ease-out-expo); }
 .slide.visible .pop { opacity: 1; transform: scale(1); }
 .pop.d1 { transition-delay: .15s; } .pop.d2 { transition-delay: .3s; } .pop.d3 { transition-delay: .45s; }
+.slide .reveal, .slide.visible .reveal, .slide .pop, .slide.visible .pop { opacity: 1; transform: none; }
 
 /* ===========================================
    СЛАЙД 1: ОБЛОЖКА
@@ -198,7 +200,9 @@ h2.title { font-size: 54px; font-weight: 800; letter-spacing: -0.01em; line-heig
 /* ===========================================
    СЛУЖЕБНОЕ: счётчик, редактирование
    =========================================== */
-.deck-counter { position: fixed; right: 26px; bottom: 20px; z-index: 1000; color: #9AA3AF; font: 15px var(--font); }
+.deck-counter { display: none; }
+.to-top { position: fixed; right: 16px; bottom: 16px; z-index: 1000; padding: 8px 12px; border: 2px solid var(--line); border-radius: 999px; background: #fff; color: var(--ink); font: 600 13px/1 var(--font); cursor: pointer; box-shadow: 0 2px 10px rgba(14, 17, 22, 0.18); }
+.to-top:focus-visible { outline: 2px solid var(--blue-bright); outline-offset: 2px; }
 .edit-hotzone { position: fixed; top: 0; left: 0; width: 80px; height: 80px; z-index: 10000; cursor: pointer; }
 .edit-toggle { position: fixed; top: 18px; left: 18px; z-index: 10001; opacity: 0; pointer-events: none; transition: opacity .3s ease; font-size: 22px; background: #fff; border: 2px solid var(--line); border-radius: 10px; padding: 8px 12px; cursor: pointer; }
 .edit-toggle.show, .edit-toggle.active { opacity: 1; pointer-events: auto; }
@@ -352,72 +356,15 @@ body.editing .slide.active { outline: 3px dashed var(--blue-bright); outline-off
 </main>
 </div>
 
+<button type="button" class="to-top" id="toTop">Back to top</button>
+
 <div class="deck-counter" id="deckCounter">1 / 9</div>
 
 <script>
-/* ===========================================
-   КОНТРОЛЛЕР ПРЕЗЕНТАЦИИ: листание и масштаб
-   =========================================== */
-class SlidePresentation {
-    constructor() {
-        this.slides = document.querySelectorAll('.slide');
-        this.counter = document.getElementById('deckCounter');
-        this.stage = document.getElementById('deckStage');
-        this.currentSlide = +localStorage.getItem('nk-web-i') || 0;
-        this.setupStageScale();
-        this.setupNav();
-        this.showSlide(this.currentSlide);
-    }
-    setupStageScale() {
-        const scale = () => {
-            const f = Math.min(window.innerWidth / 1920, window.innerHeight / 1080);
-            const x = (window.innerWidth - 1920 * f) / 2;
-            const y = (window.innerHeight - 1080 * f) / 2;
-            this.stage.style.transform = `translate(${x}px, ${y}px) scale(${f})`;
-        };
-        scale();
-        window.addEventListener('resize', scale);
-    }
-    setupNav() {
-        document.addEventListener('keydown', (e) => {
-            if (e.target.getAttribute && e.target.getAttribute('contenteditable')) return;
-            if (['ArrowRight', ' ', 'PageDown'].includes(e.key)) { e.preventDefault(); this.showSlide(this.currentSlide + 1); }
-            if (['ArrowLeft', 'PageUp'].includes(e.key)) { e.preventDefault(); this.showSlide(this.currentSlide - 1); }
-        });
-        let sx = null;
-        document.addEventListener('touchstart', e => sx = e.touches[0].clientX);
-        document.addEventListener('touchend', e => {
-            if (sx === null) return;
-            const dx = e.changedTouches[0].clientX - sx;
-            if (Math.abs(dx) > 60) this.showSlide(this.currentSlide + (dx < 0 ? 1 : -1));
-            sx = null;
-        });
-        let wheelLock = 0;
-        document.addEventListener('wheel', e => {
-            const now = Date.now();
-            if (now - wheelLock < 700 || Math.abs(e.deltaY) < 24) return;
-            wheelLock = now;
-            this.showSlide(this.currentSlide + (e.deltaY > 0 ? 1 : -1));
-        }, { passive: true });
-        document.addEventListener('click', (e) => {
-            if (document.body.classList.contains('editing')) return;
-            if (e.target.closest('.edit-toggle, .edit-hotzone, a')) return;
-            this.showSlide(this.currentSlide + (e.clientX > window.innerWidth / 2 ? 1 : -1));
-        });
-    }
-    showSlide(i) {
-        this.currentSlide = Math.max(0, Math.min(i, this.slides.length - 1));
-        this.slides.forEach((s, k) => {
-            s.classList.toggle('active', k === this.currentSlide);
-            s.classList.toggle('visible', k === this.currentSlide);
-            const off = k !== this.currentSlide; s.toggleAttribute('inert', off); s.setAttribute('aria-hidden', off ? 'true' : 'false');
-        });
-        this.counter.textContent = `${this.currentSlide + 1} / ${this.slides.length}`;
-        localStorage.setItem('nk-web-i', this.currentSlide);
-    }
-}
-const deck = new SlidePresentation();
-
+document.getElementById('toTop').addEventListener('click', function () {
+    var reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    window.scrollTo({ top: 0, behavior: reduce ? 'auto' : 'smooth' });
+});
 </script>
 </body>
 </html>
